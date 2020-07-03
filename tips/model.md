@@ -117,3 +117,92 @@ class Article extends Model
     protected $fillable = ['title', 'body'];
 }
 ```
+
+---
+
+
+為了讓每一次的測試都獨立互不影響，我們需要將每一次測試前的資料都重新建立，並在測試後還原
+
+```
+<?php
+
+namespace Tests;
+
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+abstract class TestCase extends BaseTestCase
+{
+    use CreatesApplication;
+
+    protected function initDatabase()
+    {
+        Artisan::call('migrate');
+        Artisan::call('db:seed');
+    }
+
+    protected function resetDatabase()
+    {
+        Artisan::call('migrate:reset');
+    }
+}
+```
+
+在 Unit 底下 建立 ArticleTest.php
+
+```
+<?php
+
+namespace Tests\Unit;
+
+use Tests\TestCase;
+use App\Models\Article;
+
+class ArticleTest extends TestCase
+{
+    protected  function setUp():void
+    {
+        // 一定要先呼叫，建立 Laravel Service Container 以便測試
+        parent::setUp();
+
+        $this->initDatabase();
+    }
+
+    protected  function tearDown():void
+    {
+        $this->resetDatabase();
+    }
+
+    public function testEmptyResult()
+    {
+        $articles = Article::all();
+        
+        $this->assertEquals(0, count($articles));
+    }
+    
+    public function testCreateAndList()
+    {
+        for ($i = 1; $i <= 10; $i ++) {
+            Article::create([
+                'title' => 'title ' . $i,
+                'body'  => 'body ' . $i,
+            ]);
+        }
+
+        $articles = Article::all();
+        $this->assertEquals(10, count($articles));
+    }
+}
+```
+
+```
+$ ./vendor/bin/phpunit
+PHPUnit 8.5.8 by Sebastian Bergmann and contributors.
+
+....                                                                4 / 4 (100%)
+
+Time: 1.17 seconds, Memory: 26.00 MB
+
+OK (4 tests, 4 assertions)
+
+```
