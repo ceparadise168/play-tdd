@@ -3,9 +3,21 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Repositories\ArticleRepository;
 
 class ArticleController extends Controller
 {
+    protected $repository;
+
+    /**
+     * ArticleController constructor.
+     * @param ArticleRepository $repository
+     */
+    public function __construct(ArticleRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -13,7 +25,8 @@ class ArticleController extends Controller
      */
     public function index()
     {
-        $articles = [];
+        //$articles = [];
+        $articles = $this->repository->latest10();
 
         return view('articles.index', compact('articles'));
     }
@@ -36,7 +49,11 @@ class ArticleController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        // 直接從 Http\Request 取得輸入資料
+        $this->repository->create($request->all());
+
+        // 導向列表頁
+        return redirect()->action('ArticleController@index');
     }
 
     /**
